@@ -266,15 +266,17 @@ while (True):
 
     frame = cv2.flip(frame, 1)
     
-    # Tang kich thuoc frame
-    frame = cv2.resize(frame, (1920, 1080))
+    # Tinh toan kich thuoc hien thi theo ti le goc de tranh meo anh
+    display_width = 960
+    display_height = int(display_width * original_height / original_width)
+    frame = cv2.resize(frame, (display_width, display_height))
     
     # Hien thi trang thai chu y
     cv2.putText(frame, attention_status, (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.0, status_color, 2, cv2.LINE_AA)
     
     # Hien thi goc huong dau (sau khi flip de khong bi lat)
     if pose_info:
-        cv2.putText(frame, pose_info, (10, 680), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2, cv2.LINE_AA)
+        cv2.putText(frame, pose_info, (10, display_height - 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2, cv2.LINE_AA)
     
     # Canh bao nham mat
     if countClose > alarmThreshold:
