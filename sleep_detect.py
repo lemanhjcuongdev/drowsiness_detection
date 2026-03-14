@@ -43,7 +43,7 @@ def calculate_ear(eye_landmarks):
 
 
 # Nguong EAR de xac dinh mat dong hay mo
-EAR_THRESHOLD = 0.22  # Duoi nguong nay = mat dong
+EAR_THRESHOLD = 0.19  # Duoi nguong nay = mat dong (giam de tranh bao sai khi chop mat)
 
 
 # Ham tinh goc huong dau (Head Pose Estimation)
@@ -118,9 +118,9 @@ def get_head_pose(face_landmarks, frame_shape):
 
 ################ CHUONG TRINH CHINH ##############################
 
-# Nguong phat hien huong dau (mo rong de giam bao sai)
-HEAD_UP_THRESHOLD = -25      # Ngua len > 25 do
-HEAD_DOWN_THRESHOLD = 25     # Cui xuong > 25 do
+# Nguong phat hien huong dau
+HEAD_UP_THRESHOLD = -20      # Ngua len > 20 do
+HEAD_DOWN_THRESHOLD = 20     # Cui xuong > 20 do
 HEAD_LEFT_THRESHOLD = -30    # Quay trai > 30 do
 HEAD_RIGHT_THRESHOLD = 30    # Quay phai > 30 do
 
@@ -136,8 +136,8 @@ scale = 0.5
 countClose = 0
 countDistracted = 0  # Dem so frame mat tap trung
 currState = 0
-alarmThreshold = 5
-distractedThreshold = 10  # Nguong canh bao mat tap trung
+alarmThreshold = 15    # Canh bao sau 15 frame nham mat (~1.5 giay) - chop mat tu nhien chi 1-4 frame
+distractedThreshold = 15  # Nguong canh bao mat tap trung
 
 # Calibration offset (nhin thang = 0 do sau khi calibrate)
 # Mac dinh cho webcam laptop: Pitch = 180 degree, Yaw = 0 degree la nhin thang
@@ -193,9 +193,9 @@ while (True):
         # ===== PHAT HIEN HUONG DAU =====
         pitch_raw, yaw_raw, roll = get_head_pose(face_landmarks, frame.shape)
         
-        # Ap dung calibration offset
-        pitch = pitch_raw - pitch_offset
-        yaw = yaw_raw - yaw_offset
+        # Ap dung calibration offset va chuan hoa goc ve [-180, 180]
+        pitch = ((pitch_raw - pitch_offset) + 180) % 360 - 180
+        yaw = ((yaw_raw - yaw_offset) + 180) % 360 - 180
         
         # Kiem tra huong dau
         is_distracted = False
@@ -232,11 +232,19 @@ while (True):
         eyes_closed = avg_ear < EAR_THRESHOLD
 
         # ===== DANH GIA TRANG THAI CHU Y =====
+        BLINK_IGNORE_FRAMES = 5  # Bo qua chop mat tu nhien (duoi 5 frame)
+        
         if eyes_closed:
-            attention_status = "EYES CLOSED"
-            status_color = (0, 0, 255)  # Do
             countClose += 1
-            currState = 1
+            if countClose > BLINK_IGNORE_FRAMES:
+                # Nham mat lau -> canh bao
+                attention_status = "EYES CLOSED"
+                status_color = (0, 0, 255)  # Do
+                currState = 1
+            else:
+                # Chop mat tu nhien -> van tinh la chu y
+                attention_status = "ATTENTIVE"
+                status_color = (0, 255, 0)  # Xanh la
         elif is_distracted:
             attention_status = f"DISTRACTED - {head_direction}"
             status_color = (0, 165, 255)  # Cam
